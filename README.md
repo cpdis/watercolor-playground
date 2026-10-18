@@ -97,6 +97,18 @@ git push origin main
 
 The upstream GitHub Pages workflow ([.github/workflows/deploy.yml](.github/workflows/deploy.yml)) stays in the tree to keep merges clean. GitHub does not run a fork's workflows until someone enables them in the Actions tab, so leave them off.
 
+### Link preview image
+
+[public/og.jpg](public/og.jpg) is the Open Graph image (1200 × 630) that the tags in [index.html](index.html) point to. The app paints it itself: [scripts/og/scene.js](scripts/og/scene.js) drives the real engine (Fill-tool washes, scripted brush, pen and lift strokes, Dry) to paint a fairy over toadstools, then takes a screenshot with the toolbars in view. To repaint it after you change the scene or the engine:
+
+```bash
+npm run dev                          # keep this running in another terminal
+npm i --no-save playwright-core      # once; package.json stays unchanged
+node scripts/og/run.mjs              # about 2–3 minutes; writes public/og.jpg
+```
+
+It uses your installed Google Chrome in headless mode. Set `OG_SNAPS=/some/dir` to save a screenshot after each stage. The brushes add a little randomness, so each run comes out slightly different.
+
 ## How it works
 
 The app is TypeScript and WebGL2, with a [Preact](https://preactjs.com/) interface. The simulation and the rendering don't depend on the UI.
