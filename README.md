@@ -109,6 +109,20 @@ node scripts/og/run.mjs              # about 2–3 minutes; writes public/og.jpg
 
 It uses your installed Google Chrome in headless mode. Set `OG_SNAPS=/some/dir` to save a screenshot after each stage. The brushes add a little randomness, so each run comes out slightly different.
 
+**Previews and the firewall.** Bot Protection lets Vercel's [verified bots](https://vercel.com/docs/bot-management#verified-bots) through, and that list includes the Facebook, X and LinkedIn preview bots. The Slack, Discord, Telegram, WhatsApp and iMessage preview fetchers are not verified, so Bot Protection would challenge them and those apps would show no preview. A custom WAF rule, "Link previews: let unverified preview bots fetch / and /og.jpg", lets them through. It matches only when both conditions hold:
+
+- the user agent matches `(Slackbot|Discordbot|TelegramBot|WhatsApp|facebookexternalhit)` (the iMessage fetcher calls itself `facebookexternalhit`)
+- the path matches `^/(og\.jpg)?$`, so only the page HTML and the OG image are exempt
+
+Anyone can fake those user agents, but they then reach only about 140 KB of public content. Everything else (the JS bundle, fonts) still gets the challenge. To check it:
+
+```bash
+curl -s -o /dev/null -w '%{http_code}\n' -A 'Slackbot-LinkExpanding 1.0' https://watercolor.cpd.dev/og.jpg   # 200
+curl -s -o /dev/null -w '%{http_code}\n' https://watercolor.cpd.dev/og.jpg                                  # 429
+```
+
+If you rename or move the OG image, update the rule's path condition too.
+
 ## How it works
 
 The app is TypeScript and WebGL2, with a [Preact](https://preactjs.com/) interface. The simulation and the rendering don't depend on the UI.
