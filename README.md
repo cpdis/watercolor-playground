@@ -2,7 +2,9 @@
 
 A watercolour painting app that runs in your browser. Paint flows only where the paper is wet, colours mix the way real pigments do, and washes dry with soft blooms and dark tide lines.
 
-**[Open the app →](https://msurguy.github.io/watercolor-playground/)** Nothing to install. Works with a mouse, a touchscreen or a stylus such as an Apple Pencil.
+**[Open the app →](https://watercolor.cpd.dev)** Nothing to install. Works with a mouse, a touchscreen or a stylus such as an Apple Pencil.
+
+> This is a fork of [msurguy/watercolor-playground](https://github.com/msurguy/watercolor-playground), hosted at [watercolor.cpd.dev](https://watercolor.cpd.dev). The original runs at [msurguy.github.io/watercolor-playground](https://msurguy.github.io/watercolor-playground/).
 
 ![A landscape painted in the app: a blue sky, a pink and violet horizon, green and yellow fields and small trees](docs/screenshots/landscape.webp)
 
@@ -74,14 +76,26 @@ On Windows and Linux, use Ctrl instead of ⌘.
 You need [Node.js](https://nodejs.org/) 20 or newer.
 
 ```bash
-git clone https://github.com/msurguy/watercolor-playground.git
+git clone https://github.com/cpdis/watercolor-playground.git
 cd watercolor-playground
 npm install
 npm run dev      # opens at http://localhost:5173
 npm run build    # builds a static site into dist/
 ```
 
-Every push to `main` deploys to GitHub Pages through [.github/workflows/deploy.yml](.github/workflows/deploy.yml).
+### Deployment (this fork)
+
+Vercel hosts this fork as the `watercolor` project. Every push to `main` deploys to production at [watercolor.cpd.dev](https://watercolor.cpd.dev). Vercel detects Vite and builds `dist/` with no extra config. A Cloudflare CNAME on the `cpd.dev` zone points the subdomain at Vercel. The Vercel Firewall has Bot Protection (challenge) and AI bot blocking (deny) turned on, so `curl` gets a 429 "Security Checkpoint" while real browsers load normally.
+
+To pull in new work from the original repo:
+
+```bash
+git fetch upstream
+git merge upstream/main
+git push origin main
+```
+
+The upstream GitHub Pages workflow ([.github/workflows/deploy.yml](.github/workflows/deploy.yml)) stays in the tree to keep merges clean. GitHub does not run a fork's workflows until someone enables them in the Actions tab, so leave them off.
 
 ## How it works
 
