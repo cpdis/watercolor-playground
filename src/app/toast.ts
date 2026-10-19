@@ -4,8 +4,8 @@ import { signal } from '@preact/signals';
 export const toast = signal<string | null>(null);
 let timer = 0;
 
-export function showToast(text: string) {
+export function showToast(text: string, ms = 1200) {
   clearTimeout(timer);
   toast.value = text;
-  timer = window.setTimeout(() => { toast.value = null; }, 1200);
+  timer = window.setTimeout(() => { toast.value = null; }, ms);
 }

@@ -40,6 +40,28 @@ You can also turn any PNG or JPG into a brush: choose **Import texture…** in t
 - **History.** Undo and redo any step, or jump straight to an earlier step in the History panel.
 - **Save.** Export a PNG, JPEG or WebP with a transparent, white or paper background. Save a project file (`.wcp`) to keep the wet paint and carry on later.
 - **Hand painting.** Turn on **Settings → Hand** and paint in front of your webcam. Pinch to paint, and rest your hand on a button to press it.
+- **Works offline.** Add it to your home screen and it opens with no network, for example on a plane. See [Use it offline](#use-it-offline).
+
+## Use it offline
+
+Install the app from the home screen once while you are online. After that it opens and paints with no Wi-Fi, and that includes the text fonts and iPhone photo import.
+
+**Before the flight (iPad or iPhone):**
+
+1. Open [watercolor.cpd.dev](https://watercolor.cpd.dev) in **Safari** while you are on Wi-Fi.
+2. Tap **Share**, then **Add to Home Screen**, then **Add**.
+3. **Open it from the new home-screen icon** while you are still online. On iOS the home-screen app keeps its own storage, separate from Safari, so it must download its copy itself.
+4. Wait for **"Ready to use offline"** at the top (a few seconds, about 8 MB).
+5. Test it: turn on **Airplane Mode**, close the app (swipe it away), and open it from the icon. It should open and paint.
+
+On Android, open the site in Chrome and choose **Install app** (or **Add to Home screen**), then do steps 3 to 5.
+
+**On the flight:**
+
+- **Save paintings before you close the app.** The painting lives only in memory, so closing the app (or iOS closing it in the background) clears the paper. Tap **Save** for a PNG or JPEG, or tap **Save project** in the same panel for a `.wcp` file that keeps the wet paint (you can open it later and carry on).
+- **Hand painting** downloads its tracking model the first time someone uses it. Turn it on once before the flight if the kids want it offline.
+
+**Updates:** when you are online and a new version is out, the app says **"A new version is ready"**. It never reloads by itself, because reloading clears the paper. If there is paint on the paper, the first tap on **Reload** only warns you, and the second tap reloads.
 
 ## How to paint
 
@@ -97,17 +119,41 @@ git push origin main
 
 The upstream GitHub Pages workflow ([.github/workflows/deploy.yml](.github/workflows/deploy.yml)) stays in the tree to keep merges clean. GitHub does not run a fork's workflows until someone enables them in the Actions tab, so leave them off.
 
-### Link preview image
+### Offline support (how it works)
 
-[public/og.jpg](public/og.jpg) is the Open Graph image (1200 × 630) that the tags in [index.html](index.html) point to. The app paints it itself: [scripts/og/scene.js](scripts/og/scene.js) drives the real engine (Fill-tool washes, scripted brush, pen and lift strokes, Dry) to paint a fairy over toadstools, then takes a screenshot with the toolbars in view. To repaint it after you change the scene or the engine:
+This is a PWA built with [vite-plugin-pwa](https://vite-pwa-org.netlify.app/) (`injectManifest`). It is off in `npm run dev`.
+
+- [src/sw.ts](src/sw.ts) is the service worker. It precaches the whole build: the app shell, both lazy chunks (HEIC decoder, hand tracking) and all 61 single-line font files, about 8 MB. It also caches Hand mode's MediaPipe files from their CDNs the first time they load.
+- **Page loads go to the network first** (4 s timeout) and fall back to the cached app offline. Vercel Bot Protection renews its challenge cookie on page loads. If launches came from the cache forever, the cookie would expire, the browser's update checks for `sw.js` would get a 429, and the app would stay on an old version without anyone noticing. A side effect: an online launch always runs the latest deploy.
+- [src/app/pwa.ts](src/app/pwa.ts) registers the worker and decides about updates. When a new worker is waiting, the page asks it whether it precaches the page's own script. If it does, the page already runs that build, so the workers swap quietly. If not, [UpdatePrompt](src/components/UpdatePrompt.tsx) offers a reload. Nothing ever reloads without a tap.
+- The web manifest and icons come from [vite.config.ts](vite.config.ts) and `public/`. iOS reads `apple-touch-icon.png` and the `apple-mobile-web-app-*` tags in [index.html](index.html).
+
+To check it end to end in headless Chrome:
 
 ```bash
-npm run dev                          # keep this running in another terminal
-npm i --no-save playwright-core      # once; package.json stays unchanged
-node scripts/og/run.mjs              # about 2–3 minutes; writes public/og.jpg
+npm i --no-save playwright-core
+node scripts/check-offline.mjs
 ```
 
-It uses your installed Google Chrome in headless mode. Set `OG_SNAPS=/some/dir` to save a screenshot after each stage. The brushes add a little randomness, so each run comes out slightly different.
+It builds three versions of the app, serves them like deploys, and runs 17 checks: install, an offline reload, painting offline, fonts and chunks loading offline, the update prompt (it never reloads by itself, and the first tap only warns when there is paint), and the quiet swap for a page that is already current. Run it after any change to `src/sw.ts`, `src/app/pwa.ts` or the PWA config.
+
+### Painted images (link preview and icons)
+
+The app paints its own images. [scripts/paint/](scripts/paint/) drives the real engine (Fill-tool washes, scripted brush, pen and lift strokes, Dry) and takes screenshots:
+
+- [public/og.jpg](public/og.jpg) (1200 × 630) is the Open Graph image that the tags in [index.html](index.html) point to: a fairy over toadstools, with the toolbars in view. Scene: [og.js](scripts/paint/og.js).
+- [public/icon-512.png](public/icon-512.png), `icon-192.png` and `apple-touch-icon.png` (180) are the app icons: one ultramarine and rose bloom on bare paper, centred inside the maskable safe zone. Scene: [icon.js](scripts/paint/icon.js).
+
+To repaint them after you change a scene or the engine:
+
+```bash
+npm run dev                              # keep this running in another terminal
+npm i --no-save playwright-core          # package.json stays unchanged; any later `npm install` removes it again
+node scripts/paint/run.mjs og            # about 2–3 minutes; writes public/og.jpg
+node scripts/paint/run.mjs icons         # about 10 seconds; writes the three icons
+```
+
+It uses your installed Google Chrome in headless mode. Set `OG_SNAPS=/some/dir` to save a screenshot after each stage of the OG scene. The brushes add a little randomness, so each run comes out slightly different.
 
 **Previews and the firewall.** Bot Protection lets Vercel's [verified bots](https://vercel.com/docs/bot-management#verified-bots) through, and that list includes the Facebook, X and LinkedIn preview bots. The Slack, Discord, Telegram, WhatsApp and iMessage preview fetchers are not verified, so Bot Protection would challenge them and those apps would show no preview. A custom WAF rule, "Link previews: let unverified preview bots fetch / and /og.jpg", lets them through. It matches only when both conditions hold:
 

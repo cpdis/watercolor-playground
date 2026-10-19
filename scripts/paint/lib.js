@@ -90,5 +90,8 @@ window.__kit = async function kit() {
   const dot = (cx, cy, r) => Array.from({ length: 18 }, (_, i) => { const t = i / 17, a = t * Math.PI * 4; return [cx + Math.cos(a) * r * t, cy + Math.sin(a) * r * t]; });
   const rand = (a, b) => a + Math.random() * (b - a);
 
-  return { app, engine, W, H, set, stroke, fill, dry, sleep, rot, ellipse, spline, sweeps, dot, rand };
+  /** V point -> client CSS px (for cropping a screenshot around part of the painting). */
+  const client = ([x, y]) => engine.docToClient(x / W, 1 - y / H);
+
+  return { app, engine, W, H, set, stroke, fill, dry, sleep, rot, ellipse, spline, sweeps, dot, rand, client };
 };

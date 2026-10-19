@@ -4,6 +4,7 @@ import { BrushLibrary } from '../components/BrushLibrary';
 import { HandOverlay } from '../components/HandOverlay';
 import { HistoryPanel } from '../components/HistoryPanel';
 import { DropChoice, FillChoice, Ghost, Toast } from '../components/Overlays';
+import { UpdatePrompt } from '../components/UpdatePrompt';
 import { Palette } from '../components/Palette';
 import { Paper } from '../components/Paper';
 import { PaperPanel } from '../components/PaperPanel';
@@ -44,6 +45,7 @@ function Chrome() {
     <DropChoice />
     <FillChoice />
     <HandOverlay />
+    <UpdatePrompt />
   </>;
 }
 
