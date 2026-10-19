@@ -49,7 +49,14 @@ const url = `http://localhost:${PORT}/`;
 const browser = await chromium.launch({ channel: 'chrome', headless: true });
 const context = await browser.newContext({ viewport: { width: 1200, height: 800 } });
 const page = await context.newPage();
-const until = (fn, arg, timeout = 15000) => page.waitForFunction(fn, arg, { timeout }).then(() => true, () => false);
+// Poll a page predicate (sync or async) until it is truthy. Not page.waitForFunction: it does not
+// await an async predicate, so the returned Promise counts as truthy and the wait passes at once.
+const until = async (fn, arg, timeout = 15000) => {
+  for (const end = Date.now() + timeout; Date.now() < end; await new Promise(r => setTimeout(r, 200))) {
+    if (await page.evaluate(fn, arg).catch(() => false)) return true;   // throws mid-navigation: try again
+  }
+  return false;
+};
 const build_ = () => page.evaluate(() => globalThis.__build);
 const paint = async () => { await page.mouse.move(500, 300); await page.mouse.down(); await page.mouse.move(700, 380, { steps: 12 }); await page.mouse.up(); };
 const undoEnabled = () => until(() => document.querySelector('button[title^="Undo"]')?.disabled === false, null, 5000);
